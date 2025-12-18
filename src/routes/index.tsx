@@ -1,11 +1,11 @@
 import { StackCard } from "@/components/StackCard";
+import { SwitchMode } from "@/components/SwitchTheme";
 import TechBadge from "@/components/TechBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Database, Laptop, RouteIcon, Zap } from "lucide-react";
 import "../App.css";
-import { SwitchMode } from "@/components/SwitchTheme";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
 
 function App() {
   return (
-    <div className="min-h-screen bg-primary-50 text-primary-900 selection:bg-primary/10">
+    <div className="min-h-screen flex-col bg-primary-50 justify-between text-primary-900 flex selection:bg-primary/10">
       {/* Hero Section */}
       <main className="max-w-6xl mx-auto px-6 pt-24 pb-16 text-center">
         <Badge variant="outline" className="mb-4 px-4 py-1 border-primary/80 text-secondary-600">
