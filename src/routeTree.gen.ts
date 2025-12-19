@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as BoilerplateRouteImport } from './routes/boilerplate'
 import { Route as UsersRouteImport } from './routes/Users'
 import { Route as IndexRouteImport } from './routes/index'
 
+const BoilerplateRoute = BoilerplateRouteImport.update({
+  id: '/boilerplate',
+  path: '/boilerplate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/Users',
   path: '/Users',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
+  '/boilerplate': typeof BoilerplateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
+  '/boilerplate': typeof BoilerplateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
+  '/boilerplate': typeof BoilerplateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/Users'
+  fullPaths: '/' | '/Users' | '/boilerplate'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/Users'
-  id: '__root__' | '/' | '/Users'
+  to: '/' | '/Users' | '/boilerplate'
+  id: '__root__' | '/' | '/Users' | '/boilerplate'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UsersRoute: typeof UsersRoute
+  BoilerplateRoute: typeof BoilerplateRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/boilerplate': {
+      id: '/boilerplate'
+      path: '/boilerplate'
+      fullPath: '/boilerplate'
+      preLoaderRoute: typeof BoilerplateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/Users': {
       id: '/Users'
       path: '/Users'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsersRoute: UsersRoute,
+  BoilerplateRoute: BoilerplateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
