@@ -5,7 +5,6 @@ import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
-import Layout from "./components/layout/layout.tsx";
 import "./font.css";
 import { QueryProvider } from "./providers/QueryProviders.tsx";
 import { ThemeProvider } from "./providers/ThemeProvider.tsx";
@@ -38,9 +37,7 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <QueryProvider>
-          <Layout>
-            <RouterProvider router={router} />
-          </Layout>
+          <RouterProvider router={router} />
         </QueryProvider>
       </ThemeProvider>
     </StrictMode>,
