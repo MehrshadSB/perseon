@@ -5,6 +5,8 @@ import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
+import Layout from "./components/layout/layout.tsx";
+import "./font.css";
 import { QueryProvider } from "./providers/QueryProviders.tsx";
 import { ThemeProvider } from "./providers/ThemeProvider.tsx";
 import reportWebVitals from "./reportWebVitals.ts";
@@ -34,9 +36,11 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <QueryProvider>
-          <RouterProvider router={router} />
+          <Layout>
+            <RouterProvider router={router} />
+          </Layout>
         </QueryProvider>
       </ThemeProvider>
     </StrictMode>,
