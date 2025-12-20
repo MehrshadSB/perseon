@@ -72,6 +72,22 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'orbitron';
+  src: url('../public/font/orbitron/static/Orbitron-Medium.ttf') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'digital';
+  src: url('../public/font/digital/digital-7.ttf') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Base style application */
 body {
   font-family: 'IRANSansX', system-ui, -apple-system, sans-serif;
