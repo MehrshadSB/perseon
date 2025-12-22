@@ -10,30 +10,22 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { format, isSameDay } from "date-fns";
+import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from "date-fns-jalali";
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { Emoji, EmojiProvider } from "react-apple-emojis";
-import emojiData from "react-apple-emojis/src/data.json";
 import { Badge } from "./ui/badge";
 export const CalendarGrid = () => {
-  const viewMode = useCalendarStore((state) => state.viewMode);
-
-  const currentDate = new Date();
-
-  const daysWithEmojis = [
-    { id: 1, name: "شنبه", emoji: "nerd-face" },
-    { id: 2, name: "یکشنبه", emoji: "sun" },
-    { id: 3, name: "دوشنبه", emoji: "frog" },
-    { id: 4, name: "سه شنبه", emoji: "dumpling" },
-    { id: 5, name: "چهارشنبه", emoji: "cyclone" },
-    { id: 6, name: "پنجشنبه", emoji: "seedling" },
-    { id: 7, name: "جمعه", emoji: "zombie" },
-  ];
-  const weekDays = Array.from({ length: 7 }, (_, i) => i + 10);
-  const days = generateMonthGrid(currentDate);
-
   const [events, setEvents] = useState(generateDummyEvents());
-  console.log(events);
+  const viewMode = useCalendarStore((state) => state.viewMode);
+  const viewDate = useCalendarStore((state) => state.viewDate);
+  const direction = useCalendarStore((state) => state.direction);
+
+  const days = generateMonthGrid(viewDate);
+
+  const currentWeekDays = eachDayOfInterval({
+    start: startOfWeek(viewDate, { weekStartsOn: 6 }), // شروع از شنبه
+    end: endOfWeek(viewDate, { weekStartsOn: 6 }),
+  });
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { over, active } = event;
@@ -41,17 +33,21 @@ export const CalendarGrid = () => {
     if (!over) return;
 
     const eventId = active.id.toString().replace("ev-", "");
-    const newDate = over.id; 
-
+    const newDateId = over.id as string;
     setEvents((prev) =>
-      prev.map((ev) =>
-        ev.id.toString() === eventId ? { ...ev, date: new Date(newDate as string) } : ev,
-      ),
+      prev.map((ev) => {
+        if (ev.id.toString() === eventId) {
+          // تبدیل رشته تاریخ به آبجکت Date معتبر
+          // اگر از date-fns-jalali استفاده می‌کنید، مطمئن شوید پارس کردن درست انجام شود
+          const updatedDate = new Date(newDateId);
+
+          return { ...ev, date: updatedDate };
+        }
+        return ev;
+      }),
     );
 
     try {
-      console.log(event);
-      
       console.log("بک‌اِند با موفقیت آپدیت شد!");
     } catch (error) {
       console.error("خطا در آپدیت بک‌اِند");
@@ -63,63 +59,106 @@ export const CalendarGrid = () => {
       activationConstraint: { distance: 5 },
     }),
   );
+
+  const variants = {
+    initial: (direction: number) => ({
+      x: direction > 0 ? -75 : 75,
+      opacity: 0.8,
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      x: direction > 0 ? 75 : -75,
+      opacity: 0,
+    }),
+  };
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex flex-col w-full h-full pt-14 overflow-y-hidden">
-        <div className="grid grid-cols-7">
-          {daysWithEmojis.map((day) => (
-            <div key={day.id} className="p-1 m-1 flex justify-center gap-2 items-center">
-              {day.name}
-              <EmojiProvider data={emojiData}>
-                <Emoji name={day.emoji} width={16} style={{ height: "16px" }} />
-              </EmojiProvider>
-            </div>
-          ))}
+      <div className="flex flex-col w-full h-screen pt-14 overflow-hidden">
+        <div className="flex w-full border-b">
+          {/* یک فضای خالی برای هماهنگی با ستون ساعت‌ها در سمت راست یا چپ */}
+          {viewMode === "timeGridWeek" ? <div className="w-16 border-l" /> : null}
+          <div className="grid grid-cols-7 flex-1">
+            {currentWeekDays.map((date, index) => {
+              const isToday = isSameDay(date, new Date());
+              const dayName = format(date, "EEEE"); // شنبه، یکشنبه...
+              const dayNumber = format(date, "d"); // ۱، ۲، ۳...
+
+              return (
+                <div
+                  key={index}
+                  className="flex flex-col items-center py-3 gap-1 border-l last:border-l-0"
+                >
+                  <span
+                    className={`text-[11px] font-medium ${isToday ? "text-blue-600" : "text-gray-500"}`}
+                  >
+                    {dayName}
+                  </span>
+                  <div
+                    className={`
+            text-xl w-9 h-9 flex items-center justify-center rounded-full transition-colors
+            ${isToday ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-gray-100 cursor-pointer"}
+          `}
+                  >
+                    {dayNumber}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        {/* Main Grid */}
-        <div className="flex-1 ">
-          {viewMode === "dayGridMonth" ? (
-            <div className="flex-1 grid grid-cols-7 grid-rows-5 h-full">
-              {days.map((day, index) => (
-                <DayCell key={index} day={day}>
-                  {/* رندر کردن رویدادهای مربوط به این روز */}
-                  {events
-                    .filter((ev) => isSameDay(ev.date, day.date))
-                    .map((ev) => (
-                      <DraggableEvent key={ev.id} event={ev} />
+        {/* Main Grid Month View */}
+        <div className="flex-1 overflow-hidden relative">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={viewDate.toString()} // کلید منحصر به فرد برای هر تغییر تاریخ
+              custom={direction}
+              variants={variants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="w-full h-full"
+            >
+              <div className="flex-1 h-screen overflow-y-auto calendar-scroll">
+                {viewMode === "dayGridMonth" ? (
+                  <div className="flex-1 grid grid-cols-7 grid-rows-5 h-full">
+                    {days.map((day, index) => (
+                      <DayCell key={index} day={day}>
+                        {events
+                          .filter((ev) => isSameDay(ev.date, day.date))
+                          .map((ev) => (
+                            <DraggableEvent key={ev.id} event={ev} />
+                          ))}
+                      </DayCell>
                     ))}
-                </DayCell>
-              ))}
-            </div>
-          ) : (
-            /* Weekly View (Time-based Grid) */
-            <div className="flex">
-              {/* Time Column */}
-              <div className="w-16  grid-cols-1 flex flex-col bg-gray-50">
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div key={i} className="h-10 border-t text-[10px] text-gray-400 text-center pt-1">
-                    {i + 1}:00
                   </div>
-                ))}
-              </div>
-              {/* Days Columns */}
-              <div className="grid grid-cols-7 flex-1">
-                {weekDays.map((day) => (
-                  <div key={day} className=" relative group hover:bg-gray-50/50">
-                    {Array.from({ length: 77 }).map((_, i) => (
-                      <div key={i} className="h-20 border-t border-gray-100" />
-                    ))}
-                    {/* Sample Floating Event */}
-                    {day === 12 && (
-                      <div className="absolute top-40 left-1 right-1 bg-green-500 text-white text-xs p-2 rounded shadow-md z-10">
-                        Project Launch
-                      </div>
-                    )}
+                ) : (
+                  <div className="flex">
+                    <div className="w-16 grid-cols-1 flex flex-col bg-background">
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="border-b flex items-center  justify-center h-8 text-[10px] text-gray-400 text-center"
+                        >
+                          {i + 1}:00
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-1 flex-1">
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="border-b border-l flex items-center justify-center text-[10px] text-gray-400 text-center"
+                        ></div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </DndContext>
@@ -147,7 +186,7 @@ const DraggableEvent = ({ event }: { event: any }) => {
       style={style}
       {...listeners}
       {...attributes}
-      className="bg-blue-600 text-white text-[11px] p-1.5 mb-1 rounded-md shadow-sm touch-none"
+      className="bg-blue-600 text-white text-[8px] py-0.5 px-2 mb-1 rounded-md shadow-sm touch-none"
     >
       {event.title}
     </div>
@@ -164,7 +203,7 @@ const DayCell = ({ day, children }: { day: any; children: React.ReactNode }) => 
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col items-start p-2 border-b border-l min-h-30 transition-all
+      className={`flex flex-col items-start p-2 border-b border-l transition-all
         ${isOver ? "bg-blue-100/50 scale-[0.98]" : "hover:bg-slate-50"}`}
     >
       <div className="flex justify-end w-full mb-1">

@@ -1,29 +1,26 @@
-import { eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth } from "date-fns-jalali";
+import { addDays, format, isSameMonth, startOfMonth, startOfWeek } from "date-fns-jalali";
 
 export const generateMonthGrid = (viewDate: Date) => {
+  // ۱. پیدا کردن اولین روز ماه (مثلاً ۱ دی)
   const monthStart = startOfMonth(viewDate);
-  const monthEnd = endOfMonth(viewDate);
 
-  // اگر می‌خواهید شروع تقویم دقیقاً ۱ آذر باشد اما ته آن پر شود:
-  const start = monthStart;
+  // ۲. پیدا کردن اولین شنبه‌ای که گرید باید از آن شروع شود
+  // این کار باعث می‌شود روزهای آخر آذر که در هفته اول دی هستند هم جنریت شوند
+  const startDate = startOfWeek(monthStart, { weekStartsOn: 6 });
 
-  // پایان را تا آخرین روزِ هفته‌ای که ۳۰ آذر در آن است ادامه می‌دهیم
-  // { weekStartsOn: 6 } یعنی هفته ما شنبه تمام می‌شود (جمعه آخر هفته است)
-  const end = endOfWeek(monthEnd, { weekStartsOn: 6 });
+  // ۳. گوگل کلندر معمولاً ۶ هفته (۴۲ روز) را نشان می‌دهد تا ارتفاع گرید ثابت بماند
+  // اگر اصرار بر ۳۵ روز دارید، length را ۳۵ بگذارید (اما ممکن است برخی ماه‌ها ناقص شوند)
+  const totalDays = 35;
 
-  const days = eachDayOfInterval({
-    start,
-    end,
+  return Array.from({ length: totalDays }).map((_, i) => {
+    const date = addDays(startDate, i);
+    return {
+      date,
+      dayNumber: format(date, "d"),
+      // تشخیص اینکه آیا این روز متعلق به همین ماه است یا ماه قبل/بعد
+      isCurrentMonth: isSameMonth(date, monthStart),
+    };
   });
-
-  // تبدیل هر روز به یک آبجکت حاوی اطلاعات جلالی
-  return days.map((day) => ({
-    date: day, // آبجکت اصلی برای محاسبات
-    jalaliDate: format(day, "yyyy/MM/dd"), // مثال: ۱۴۰۴/۰۹/۲۷
-    dayNumber: format(day, "d"), // ۲۷
-    monthName: format(day, "MMMM"), // آذر
-    weekDayName: format(day, "EEEE"), // پنج‌شنبه
-  }));
 };
 
 export const getJalaliMonthYear = (date: Date = new Date()) => {
