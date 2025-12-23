@@ -1,5 +1,3 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
-
 import {
   Sidebar,
   SidebarContent,
@@ -8,44 +6,26 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { CalendarHijri } from "./Calender";
-
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "#",
-    icon: Home,
-  },
-  {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
-];
+import EventsSiderbar from "./EventsSiderbar";
+import { ProfileCard } from "./ProfileCard";
 
 export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
-        <SidebarGroup className="overflow-hidden">
-          <SidebarGroupLabel>Perseon</SidebarGroupLabel>
-          <SidebarGroupContent className="flex justify-center">
-            <CalendarHijri />
+        <SidebarGroup className="overflow-hidden bg-background ">
+          <SidebarGroupLabel className="text-primary-800" style={{ direction: "ltr" }}>
+            Perseon
+          </SidebarGroupLabel>
+          <SidebarGroupContent className="flex flex-col justify-between h-screen text-primary-800">
+            <div>
+              <div className="flex flex-col items-center justify-center">
+                <CalendarHijri />
+              </div>
+              <EventsSiderbar />
+            </div>
+
+            <ProfileCard name="نام کاربر" email="user@example.com" />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

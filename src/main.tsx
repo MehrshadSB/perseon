@@ -36,13 +36,13 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <QueryProvider>
+      <QueryProvider>
+        <ThemeProvider>
           <Layout>
             <RouterProvider router={router} />
           </Layout>
-        </QueryProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </QueryProvider>
     </StrictMode>,
   );
 }
