@@ -67,7 +67,14 @@ const useCalendarStore = create<CalendarState>()(
           return { viewDate: prevDate, direction: -1 };
         }),
 
-      today: () => set({ viewDate: startOfToday() }),
+      today: () =>
+        set((state) => {
+          const today = startOfToday();
+          if (state.viewDate.getTime() === today.getTime()) {
+            return state;
+          }
+          return { viewDate: today };
+        }),
     }),
     {
       name: "calendar-storage",

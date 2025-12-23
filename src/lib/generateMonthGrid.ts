@@ -1,15 +1,21 @@
-import { addDays, format, isSameMonth, startOfMonth, startOfWeek } from "date-fns-jalali";
+import type { ViewMode } from "@/store/calender";
+import {
+  addDays,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameMonth,
+  isSameYear,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns-jalali";
 
 export const generateMonthGrid = (viewDate: Date) => {
-  // ۱. پیدا کردن اولین روز ماه (مثلاً ۱ دی)
   const monthStart = startOfMonth(viewDate);
-
-  // ۲. پیدا کردن اولین شنبه‌ای که گرید باید از آن شروع شود
-  // این کار باعث می‌شود روزهای آخر آذر که در هفته اول دی هستند هم جنریت شوند
+ 
   const startDate = startOfWeek(monthStart, { weekStartsOn: 6 });
 
-  // ۳. گوگل کلندر معمولاً ۶ هفته (۴۲ روز) را نشان می‌دهد تا ارتفاع گرید ثابت بماند
-  // اگر اصرار بر ۳۵ روز دارید، length را ۳۵ بگذارید (اما ممکن است برخی ماه‌ها ناقص شوند)
+
   const totalDays = 35;
 
   return Array.from({ length: totalDays }).map((_, i) => {
@@ -17,12 +23,37 @@ export const generateMonthGrid = (viewDate: Date) => {
     return {
       date,
       dayNumber: format(date, "d"),
-      // تشخیص اینکه آیا این روز متعلق به همین ماه است یا ماه قبل/بعد
       isCurrentMonth: isSameMonth(date, monthStart),
     };
   });
 };
 
-export const getJalaliMonthYear = (date: Date = new Date()) => {
-  return format(date, "MMMM yyyy");
+export const getCalendarRangeTitle = (date: Date, view: ViewMode) => {
+  let start: Date;
+  let end: Date;
+
+  if (view === "timeGridWeek") {
+    start = startOfWeek(date, { weekStartsOn: 6 }); 
+    end = endOfWeek(date, { weekStartsOn: 6 });
+  } else if (view === "dayGridMonth") {
+    start = startOfMonth(date);
+    end = endOfMonth(date);
+  } else {
+    return format(date, "d MMMM yyyy"); 
+  }
+
+  if (isSameMonth(start, end)) {
+    return format(start, "MMMM yyyy");
+  }
+
+  const firstMonth = format(start, "MMMM");
+  const lastMonth = format(end, "MMMM");
+  const firstYear = format(start, "yyyy");
+  const lastYear = format(end, "yyyy");
+
+  if (!isSameYear(start, end)) {
+    return `${firstMonth} ${firstYear} - ${lastMonth} ${lastYear}`;
+  }
+
+  return `${firstMonth} - ${lastMonth} ${firstYear}`;
 };

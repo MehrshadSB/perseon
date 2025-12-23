@@ -78,7 +78,6 @@ export const CalendarGrid = () => {
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col w-full h-screen pt-14 overflow-hidden">
         <div className="flex w-full border-b">
-          {/* یک فضای خالی برای هماهنگی با ستون ساعت‌ها در سمت راست یا چپ */}
           {viewMode === "timeGridWeek" ? <div className="w-16 border-l" /> : null}
           <div className="grid grid-cols-7 flex-1">
             {currentWeekDays.map((date, index) => {
@@ -96,14 +95,16 @@ export const CalendarGrid = () => {
                   >
                     {dayName}
                   </span>
-                  <div
-                    className={`
+                  {viewMode === "timeGridWeek" ? (
+                    <div
+                      className={`
             text-xl w-9 h-9 flex items-center justify-center rounded-full transition-colors
             ${isToday ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-gray-100 cursor-pointer"}
           `}
-                  >
-                    {dayNumber}
-                  </div>
+                    >
+                      {dayNumber}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
@@ -121,7 +122,7 @@ export const CalendarGrid = () => {
               exit="exit"
               className="w-full h-full"
             >
-              <div className="flex-1 h-screen overflow-y-auto calendar-scroll">
+              <div className="flex-1 h-full overflow-y-auto calendar-scroll">
                 {viewMode === "dayGridMonth" ? (
                   <div className="flex-1 grid grid-cols-7 grid-rows-5 h-full">
                     {days.map((day, index) => (
@@ -174,7 +175,7 @@ const DraggableEvent = ({ event }: { event: any }) => {
 
   const style: React.CSSProperties = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    opacity: isDragging ? 0.5 : 1, // وقتی درگ میشه کمرنگ بشه
+    opacity: isDragging ? 0.5 : 1,
     cursor: "grab",
     position: "relative",
     zIndex: isDragging ? 999 : 1,
@@ -193,12 +194,13 @@ const DraggableEvent = ({ event }: { event: any }) => {
   );
 };
 
-// --- کامپوننت Droppable (سلول روز) ---
 const DayCell = ({ day, children }: { day: any; children: React.ReactNode }) => {
-  const dateKey = format(day.date, "yyyy-MM-dd"); // تبدیل تاریخ به فرمت رشته برای ID
+  const dateKey = format(day.date, "yyyy-MM-dd");
   const { setNodeRef, isOver } = useDroppable({
     id: dateKey,
   });
+
+  const isFirstDayOfMonth = day.dayNumber === 1 || day.dayNumber === "1";
 
   return (
     <div
@@ -206,10 +208,16 @@ const DayCell = ({ day, children }: { day: any; children: React.ReactNode }) => 
       className={`flex flex-col items-start p-2 border-b border-l transition-all
         ${isOver ? "bg-blue-100/50 scale-[0.98]" : "hover:bg-slate-50"}`}
     >
-      <div className="flex justify-end w-full mb-1">
+      <div className="flex justify-between items-center w-full mb-1">
+        <div className="text-xs font-bold text-slate-500">
+          {isFirstDayOfMonth && format(day.date, "MMMM")}
+        </div>
+
         <Badge
           variant="secondary"
-          className={`${isSameDay(day.date, new Date()) ? "bg-blue-500 text-white" : ""}`}
+          className={`h-6 w-6 flex items-center justify-center p-0 ${
+            isSameDay(day.date, new Date()) ? "bg-blue-600 text-white" : ""
+          }`}
         >
           {day.dayNumber}
         </Badge>

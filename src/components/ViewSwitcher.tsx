@@ -1,5 +1,5 @@
 import useCalendarStore from "@/store/calender";
-import { Calendar, Check, ChevronDown, Columns, Layout } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, Columns, Layout } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 
@@ -63,7 +63,7 @@ export const ViewSwitcher: React.FC = () => {
           )}
         </div>
 
-        <div>
+        <div className="flex items-center">
           <Button className=" bg-gray-200! rounded-full! w-12 h-12" onClick={today}>
             امروز
           </Button>
@@ -72,13 +72,13 @@ export const ViewSwitcher: React.FC = () => {
             className="px-4 py-1.5 text-sm font-medium transition-all duration-200 rounded-md"
             onClick={back}
           >
-            قبلی
+            <ArrowRight size="16px" />
           </button>
           <button
             className="px-4 py-1.5 text-sm font-medium transition-all duration-200 rounded-md"
             onClick={next}
           >
-            بعدی
+            <ArrowLeft size="16px" />
           </button>
         </div>
       </div>
