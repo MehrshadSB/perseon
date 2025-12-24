@@ -43,19 +43,46 @@ export const generateDummyEvents = () => {
     "آپدیت داکس",
   ];
 
-  for (let i = 1; i <= 10; i++) {
-    // ایجاد یک تاریخ تصادفی در ماه جاری
-    const randomDay = Math.floor(Math.random() * 28) + 1;
-    const date = new Date();
-    date.setDate(randomDay);
+  const now = new Date();
+
+  for (let i = 1; i <= 15; i++) {
+    const randomDayOffset = Math.floor(Math.random() * 14) - 7;
+    const eventDate = new Date(now);
+    eventDate.setDate(now.getDate() + randomDayOffset);
+
+    const startHour = Math.floor(Math.random() * 8) + 8;
+    const startMinute = Math.random() > 0.5 ? 0 : 30;
+
+    const startDate = new Date(eventDate);
+    startDate.setHours(startHour, startMinute, 0, 0);
+
+    const durationMinutes = (Math.floor(Math.random() * 5) + 1) * 30;
+    const endDate = new Date(startDate);
+    endDate.setMinutes(startDate.getMinutes() + durationMinutes);
 
     dummyEvents.push({
       id: i,
       title: `${titles[i % titles.length]} ${i}`,
-      date: date,
+      start: startDate,
+      end: endDate,
+      color: ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"][i % 4],
     });
   }
   return dummyEvents;
 };
 
-// حالا توی کامپوننت استفاده کن:
+export function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()!.split(";").shift() || null;
+  }
+  return null;
+}
+
+export const auth = {
+  isAuthenticated: () => {
+    const accessToken = getCookie("accessToken")
+    return Boolean(accessToken)
+  },
+}

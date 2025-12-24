@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as BoilerplateRouteImport } from './routes/boilerplate'
 import { Route as UsersRouteImport } from './routes/Users'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as loginLoginRouteImport } from './routes/(login)/login'
 
 const BoilerplateRoute = BoilerplateRouteImport.update({
   id: '/boilerplate',
@@ -28,35 +29,44 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const loginLoginRoute = loginLoginRouteImport.update({
+  id: '/(login)/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
   '/boilerplate': typeof BoilerplateRoute
+  '/login': typeof loginLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
   '/boilerplate': typeof BoilerplateRoute
+  '/login': typeof loginLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
   '/boilerplate': typeof BoilerplateRoute
+  '/(login)/login': typeof loginLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/Users' | '/boilerplate'
+  fullPaths: '/' | '/Users' | '/boilerplate' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/Users' | '/boilerplate'
-  id: '__root__' | '/' | '/Users' | '/boilerplate'
+  to: '/' | '/Users' | '/boilerplate' | '/login'
+  id: '__root__' | '/' | '/Users' | '/boilerplate' | '/(login)/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UsersRoute: typeof UsersRoute
   BoilerplateRoute: typeof BoilerplateRoute
+  loginLoginRoute: typeof loginLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(login)/login': {
+      id: '/(login)/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof loginLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsersRoute: UsersRoute,
   BoilerplateRoute: BoilerplateRoute,
+  loginLoginRoute: loginLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

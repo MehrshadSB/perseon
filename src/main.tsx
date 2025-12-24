@@ -5,8 +5,9 @@ import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
-import Layout from "./components/layout/layout.tsx";
 import "./font.css";
+import { auth } from "./lib/utils.ts";
+import AuthProvider from "./providers/AuthProvider.tsx";
 import { QueryProvider } from "./providers/QueryProviders.tsx";
 import { ThemeProvider } from "./providers/ThemeProvider.tsx";
 import reportWebVitals from "./reportWebVitals.ts";
@@ -15,7 +16,9 @@ import "./styles.css";
 // Create a new router instance
 const router = createRouter({
   routeTree,
-  context: {},
+  context: {
+    auth,
+  },
   defaultPreload: "intent",
   scrollRestoration: true,
   defaultStructuralSharing: true,
@@ -38,9 +41,9 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <QueryProvider>
         <ThemeProvider>
-          <Layout>
+          <AuthProvider>
             <RouterProvider router={router} />
-          </Layout>
+          </AuthProvider>
         </ThemeProvider>
       </QueryProvider>
     </StrictMode>,

@@ -1,4 +1,5 @@
 import { CalendarGrid } from "@/components/CalenderGrid";
+import CalendarLayout from "@/components/layout/CalendarLayout";
 import { createFileRoute } from "@tanstack/react-router";
 import "../App.css";
 
@@ -7,5 +8,9 @@ export const Route = createFileRoute("/")({
 });
 
 function App() {
-  return <CalendarGrid />;
+  return (
+    <CalendarLayout>
+      <CalendarGrid />
+    </CalendarLayout>
+  );
 }

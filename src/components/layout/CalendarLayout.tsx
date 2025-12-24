@@ -4,7 +4,7 @@ import useCalendarStore from "@/store/calender";
 import { AppSidebar } from "../AppSidebar";
 import { ViewSwitcher } from "../ViewSwitcher";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function CalendarLayout({ children }: { children: React.ReactNode }) {
   const { viewDate, viewMode } = useCalendarStore();
 
   return (
