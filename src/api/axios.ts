@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/auth";
 import { getCookie, removeCookie, setCookie } from "@/utils/cookie";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = import.meta.env.API_URL || "http://localhost:3000/";
 
 interface FailedRequest {
   resolve: (token: string) => void;
@@ -70,7 +70,7 @@ api.interceptors.response.use(
       try {
         const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
 
-        const newAccessToken = res.data.accessToken;
+        const newAccessToken = res.data.data.accessToken;
 
         setCookie("accessToken", newAccessToken);
 

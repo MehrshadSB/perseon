@@ -9,12 +9,120 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from "@dnd-kit/core";
+import { createSnapModifier } from "@dnd-kit/modifiers";
 import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from "date-fns-jalali";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { QuickEventModal } from "./QuickEventModal";
 import { Badge } from "./ui/badge";
 export const CalendarGrid = () => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ date: Date; y: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<number | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalPos, setModalPos] = useState({ top: 0, left: 0 });
+  const [selectedRange, setSelectedRange] = useState({ start: new Date(), end: new Date() });
+
+  const snapToInterval = (y: number) => Math.round(y / 12) * 12;
+
+  const handleGridMouseDown = (e: React.MouseEvent, dayDate: Date) => {
+    if ((e.target as HTMLElement).closest(".draggable-event")) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = snapToInterval(e.clientY - rect.top);
+
+    setIsDragging(true);
+    setDragStart({ date: dayDate, y: relativeY });
+
+    // محاسبه ساعت دقیق نقطه کلیک شده
+    const currentHourMin = (relativeY / 48) * 60;
+    const start = new Date(dayDate);
+    start.setHours(Math.floor(currentHourMin / 60), currentHourMin % 60);
+
+    // تعیین پایان (مثلاً ۱۵ یا ۳۰ دقیقه بعد به عنوان پیش‌فرض)
+    const end = new Date(start);
+    end.setMinutes(start.getMinutes() + 15);
+
+    setDragEnd(relativeY + 12); // نمایش بصری ۱۵ دقیقه (هر ۴۸ پیکسل ۱ ساعت است، پس ۱۲ پیکسل ۱۵ دقیقه)
+
+    // آپدیت کردن استیت اصلی برای مودال
+    setSelectedRange({ start, end });
+  };
+
+  const handleGridMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+
+    const container = e.currentTarget.querySelector(
+      `[data-date="${format(dragStart.date, "yyyy-MM-dd")}"]`,
+    );
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const currentY = snapToInterval(e.clientY - rect.top);
+
+    if (currentY > dragStart.y) {
+      setDragEnd(currentY);
+
+      // آپدیت لحظه‌ای زمان پایان برای نمایش در Ghost Event یا مودال
+      const endMin = (currentY / 48) * 60;
+      const newEnd = new Date(dragStart.date);
+      newEnd.setHours(Math.floor(endMin / 60), endMin % 60);
+
+      setSelectedRange((prev) => ({ ...prev, end: newEnd }));
+    }
+  };
+
+  const handleGridMouseUp = (e: React.MouseEvent) => {
+    if (isDragging && dragStart && dragEnd) {
+      // ۱. پیدا کردن ستون دقیق
+      const container = e.currentTarget.querySelector(
+        `[data-date="${format(dragStart.date, "yyyy-MM-dd")}"]`,
+      );
+
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const modalWidth = 420;
+
+        // ۲. محاسبه موقعیت افقی (RTL)
+        // اگر سمت چپ ستون جا بود، آنجا باز شود، وگرنه سمت راست
+        let leftPos = rect.left - modalWidth - 15;
+        if (leftPos < 20) {
+          leftPos = rect.right + 15;
+        }
+
+        // ۳. محاسبه موقعیت عمودی (تراز با شروع درگ)
+        const topPos = Math.min(rect.top + dragStart.y, window.innerHeight - 450);
+
+        setModalPos({ top: topPos, left: leftPos });
+
+        // تنظیم زمان‌های نهایی
+        const startMin = (dragStart.y / 48) * 60;
+        const endMin = (dragEnd / 48) * 60;
+        const start = new Date(dragStart.date);
+        start.setHours(Math.floor(startMin / 60), startMin % 60);
+        const end = new Date(dragStart.date);
+        end.setHours(Math.floor(endMin / 60), endMin % 60);
+
+        setSelectedRange({ start, end });
+        setShowModal(true);
+      }
+    }
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (showModal && selectedRange) {
+      const startY =
+        selectedRange.start.getHours() * 48 + (selectedRange.start.getMinutes() / 60) * 48;
+      const endY = selectedRange.end.getHours() * 48 + (selectedRange.end.getMinutes() / 60) * 48;
+
+      setDragStart((prev) => (prev ? { ...prev, y: startY } : null));
+      setDragEnd(endY);
+    }
+  }, [selectedRange, showModal]);
+
   const [events, setEvents] = useState(generateDummyEvents());
   const viewMode = useCalendarStore((state) => state.viewMode);
   const viewDate = useCalendarStore((state) => state.viewDate);
@@ -31,38 +139,32 @@ export const CalendarGrid = () => {
     const { over, active } = event;
     if (!over) return;
 
-    const eventId = active.id.toString().replace("ev-", "");
-    const overId = over.id.toString(); // "yyyy-MM-dd" یا "yyyy-MM-dd-HH"
+    const draggedEvent = active.data.current?.event;
+    const overId = over.id.toString();
 
-    setEvents((prev) =>
-      prev.map((ev) => {
-        if (ev.id.toString() === eventId) {
-          if (overId.includes("-hour-")) {
-            // منطق نمای هفته/روز
-            const [datePart, hourPart] = overId.split("-hour-");
-            const newStart = new Date(datePart);
-            newStart.setHours(parseInt(hourPart), new Date(ev.start).getMinutes());
+    // اگر در نمای ماه هستیم (فقط تغییر روز)
+    if (viewMode === "dayGridMonth") {
+      const newDate = new Date(overId); // overId در اینجا "yyyy-MM-dd" است
+      const updatedStart = new Date(
+        newDate.setHours(draggedEvent.start.getHours(), draggedEvent.start.getMinutes()),
+      );
+      const updatedEnd = new Date(
+        newDate.setHours(draggedEvent.end.getHours(), draggedEvent.end.getMinutes()),
+      );
 
-            const duration = new Date(ev.end).getTime() - new Date(ev.start).getTime();
-            const newEnd = new Date(newStart.getTime() + duration);
+    }
 
-            return { ...ev, start: newStart, end: newEnd };
-          } else {
-            // منطق نمای ماه
-            const updatedDate = new Date(overId);
-            // آپدیت کردن سال/ماه/روز بدون تغییر ساعت قبلی
-            const newStart = new Date(ev.start);
-            newStart.setFullYear(
-              updatedDate.getFullYear(),
-              updatedDate.getMonth(),
-              updatedDate.getDate(),
-            );
-            return { ...ev, start: newStart };
-          }
-        }
-        return ev;
-      }),
-    );
+    // اگر در نمای هفته/روز هستیم (تغییر ساعت و احتمالاً روز)
+    else if (overId.includes("-hour-")) {
+      const [datePart, hourPart] = overId.split("-hour-");
+      const newDate = new Date(datePart);
+      const newHour = parseInt(hourPart);
+
+      const duration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
+      const updatedStart = new Date(newDate.setHours(newHour, 0, 0, 0));
+      const updatedEnd = new Date(updatedStart.getTime() + duration);
+
+    }
   };
 
   const sensors = useSensors(
@@ -70,6 +172,8 @@ export const CalendarGrid = () => {
       activationConstraint: { distance: 5 },
     }),
   );
+
+  const snapTo15Min = createSnapModifier(12);
 
   const variants = {
     initial: (direction: number) => ({
@@ -86,10 +190,47 @@ export const CalendarGrid = () => {
     }),
   };
 
-  console.log(days);
+  const createCalendarModifier = (
+    viewMode: string,
+    slotWidth: number,
+    slotHeight: number,
+  ): Modifier => {
+    return ({ transform }) => {
+      if (viewMode === "dayGridMonth") {
+        // در نمای ماه: اسنپ شدن کامل به خانه‌ها (هم افقی هم عمودی)
+        return {
+          ...transform,
+          x: Math.round(transform.x / slotWidth) * slotWidth,
+          y: Math.round(transform.y / slotHeight) * slotHeight,
+        };
+      } else {
+        // در نمای هفته: اسنپ عمودی ۱۵ دقیقه‌ای و اسنپ افقی کامل روی ستون روزها
+        return {
+          ...transform,
+          x: Math.round(transform.x / slotWidth) * slotWidth,
+          y: Math.round(transform.y / (slotHeight / 4)) * (slotHeight / 4), // اسنپ ۱۵ دقیقه‌ای
+        };
+      }
+    };
+  };
+
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // محاسبه ابعاد برای اسنپ کردن
+  const slotHeight = 48; // ارتفاع هر ساعت که در کدتان h-12 بود
+  const [slotWidth, setSlotWidth] = useState(0);
+
+  useEffect(() => {
+    if (calendarRef.current) {
+      const width = calendarRef.current.offsetWidth / (viewMode === "timeGridDay" ? 1 : 7);
+      setSlotWidth(width);
+    }
+  }, [viewMode, viewDate]);
+
+  const calendarModifier = createCalendarModifier(viewMode, slotWidth, slotHeight);
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[calendarModifier]}>
       <div className="flex flex-col w-full h-screen pt-14 overflow-hidden">
         <div className="flex w-full border-b ">
           {viewMode === "timeGridWeek" ? <div className="w-16 border-l" /> : null}
@@ -114,8 +255,6 @@ export const CalendarGrid = () => {
                     >
                       {dayName}
                     </span>
-
-                    {/* نمایش عدد روز در نمای هفته و روز */}
                     {viewMode !== "dayGridMonth" ? (
                       <div
                         className={`
@@ -135,7 +274,7 @@ export const CalendarGrid = () => {
         <div className="flex-1 overflow-hidden relative">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={viewDate.toString()} // کلید منحصر به فرد برای هر تغییر تاریخ
+              key={viewDate.toString()}
               custom={direction}
               variants={variants}
               initial="initial"
@@ -143,7 +282,7 @@ export const CalendarGrid = () => {
               exit="exit"
               className="w-full h-full"
             >
-              <div className="flex-1 h-full overflow-y-auto scrollbar-hide">
+              <div ref={calendarRef} className="flex-1 h-full overflow-y-auto scrollbar-hide">
                 {viewMode === "dayGridMonth" ? (
                   <div className="flex-1 grid grid-cols-7 grid-rows-5 h-full">
                     {days.map((day, index) => (
@@ -160,8 +299,8 @@ export const CalendarGrid = () => {
                   <div className="flex">
                     <div className="w-16 flex-none bg-background">
                       {Array.from({ length: 24 }).map((_, i) => (
-                        <div key={i} className="h-9 border-b border-l relative">
-                          {/* نمایش از ساعت 0:00 تا 23:00 */}
+                        <div key={i} className="h-12 border-b border-l relative">
+                          {/* hour column from 00:00 to 23:00 */}
                           <span className="absolute -top-2  left-0 right-0 text-center text-[10px] text-gray-400 bg-background w-1/2 mx-auto">
                             {i}:00
                           </span>
@@ -169,7 +308,10 @@ export const CalendarGrid = () => {
                       ))}
                     </div>
                     <div
-                      className={`grid ${viewMode === "timeGridDay" ? "grid-cols-1" : "grid-cols-7"} flex-1`}
+                      className={`grid ${viewMode === "timeGridDay" ? "grid-cols-1" : "grid-cols-7"} flex-1 relative`}
+                      onMouseMove={handleGridMouseMove}
+                      onMouseUp={handleGridMouseUp}
+                      onMouseLeave={handleGridMouseUp} // if mouse leave calendar drag will end
                     >
                       {currentWeekDays
                         .filter((date) =>
@@ -178,19 +320,48 @@ export const CalendarGrid = () => {
                         .map((dayDate, dayIndex) => (
                           <div
                             key={dayIndex}
-                            className="relative flex flex-col border-l last:border-r h-full" // 24 * 48px (h-12)
+                            data-date={format(dayDate, "yyyy-MM-dd")}
+                            className="relative flex flex-col border-l last:border-l-0 h-288 select-none touch-none"
+                            onMouseDown={(e) => handleGridMouseDown(e, dayDate)}
                           >
-                            {/* ۱. خطوط راهنمای ساعت (Grid Lines) */}
+                            {/* hour bottom border */}
                             {Array.from({ length: 24 }).map((_, hourIndex) => (
-                              <HourSlot key={hourIndex} dayDate={dayDate} hour={hourIndex} />
+                              <div
+                                key={hourIndex}
+                                className="h-12 border-b border-gray-200/50 pointer-events-none"
+                              />
                             ))}
 
-                            {/* ۲. کانتینر ایونت‌ها (آماده برای پوزیشن Absolute) */}
+                            {/* Temp Ghost Event */}
+                            {(isDragging || showModal) &&
+                              dragStart &&
+                              isSameDay(dragStart.date, dayDate) &&
+                              dragEnd && (
+                                <div
+                                  className="absolute left-0 right-0 mx-1 bg-blue-500/20 border-r-4 border-blue-600 z-20 pointer-events-none transition-all"
+                                  style={{
+                                    top: `${dragStart.y}px`,
+                                    height: `${dragEnd - dragStart.y}px`,
+                                  }}
+                                >
+                                  <div className="bg-blue-600 text-white text-[10px] px-1 shadow-sm w-fit rounded-bl-md">
+                                    {format(selectedRange.end, "HH:mm") +
+                                      " - " +
+                                      format(selectedRange.start, "HH:mm")}
+                                  </div>
+                                </div>
+                              )}
+                            {/* Events should map here */}
                             <div className="absolute inset-0 pointer-events-none">
                               {events
                                 .filter((event) => isSameDay(new Date(event.start), dayDate))
                                 .map((event) => (
-                                  <TimeGridEvent key={event.id} event={event} />
+                                  <div
+                                    key={event.id}
+                                    className="draggable-event pointer-events-auto"
+                                  >
+                                    <TimeGridEvent event={event} />
+                                  </div>
                                 ))}
                             </div>
                           </div>
@@ -202,6 +373,26 @@ export const CalendarGrid = () => {
             </motion.div>
           </AnimatePresence>
         </div>
+        <QuickEventModal
+          showModal={showModal}
+          setShowModal={(val) => {
+            setShowModal(val);
+            if (!val) {
+              setDragStart(null);
+              setDragEnd(null);
+            } // پاک کردن مستطیل آبی بعد از بستن
+          }}
+          modalPos={modalPos}
+          selectedRange={selectedRange}
+          setSelectedRange={setSelectedRange}
+          onSave={(data) => {
+            console.log("Saving to DB:", data);
+            // اینجا اکشن ذخیره در دیتابیس را صدا بزن
+            setShowModal(false);
+            setDragStart(null);
+            setDragEnd(null);
+          }}
+        />
       </div>
     </DndContext>
   );
@@ -294,7 +485,7 @@ const TimeGridEvent = ({ event }: { event: any }) => {
       style={style}
       {...listeners}
       {...attributes}
-      className="left-1 right-1 bg-blue-600/90 text-white p-1 text-[10px] rounded shadow-sm touch-none pointer-events-auto overflow-hidden"
+      className="left-3 right-0 bg-blue-600/90 text-white p-1 text-[10px] rounded shadow-sm touch-none pointer-events-auto overflow-hidden"
     >
       <div className="font-bold">{event.title}</div>
       <div>{format(start, "HH:mm")}</div>
@@ -318,7 +509,7 @@ const HourSlot = ({
   return (
     <div
       ref={setNodeRef}
-      className={`h-12 border-b border-gray-100/50 relative ${isOver ? "bg-blue-50/50" : ""}`}
+      className={`h-12 border-b border-gray-300/80 relative ${isOver ? "bg-blue-50/50" : ""}`}
     >
       {children}
     </div>

@@ -5,11 +5,13 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
+import { useAuthStore } from "@/store/auth";
 import { CalendarHijri } from "./Calender";
 import EventsSiderbar from "./EventsSiderbar";
 import { ProfileCard } from "./ProfileCard";
 
 export function AppSidebar() {
+  
   return (
     <Sidebar>
       <SidebarContent>
@@ -25,7 +27,7 @@ export function AppSidebar() {
               <EventsSiderbar />
             </div>
 
-            <ProfileCard name="نام کاربر" email="user@example.com" />
+            <ProfileCard />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

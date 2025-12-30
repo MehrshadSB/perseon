@@ -5,6 +5,7 @@ import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
+import { Toaster } from "sonner";
 import "./font.css";
 import { auth } from "./lib/utils.ts";
 import AuthProvider from "./providers/AuthProvider.tsx";
@@ -38,15 +39,16 @@ const rootElement = document.getElementById("app");
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
-    <StrictMode>
+    <>
       <QueryProvider>
         <ThemeProvider>
           <AuthProvider>
             <RouterProvider router={router} />
+            <Toaster position="bottom-center" />
           </AuthProvider>
         </ThemeProvider>
       </QueryProvider>
-    </StrictMode>,
+    </>,
   );
 }
 
