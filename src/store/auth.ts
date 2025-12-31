@@ -1,6 +1,7 @@
 import { api } from "@/api/axios";
 import { getCookie } from "@/lib/utils";
 import { setCookie } from "@/utils/cookie";
+import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -26,13 +27,9 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (
-    name: string,
-    email: string,
-    password: string,
-  ) => Promise<{ message: string; userId: string }>;
-  fetchProfile: () => Promise<User>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  fetchProfile: () => Promise<User | void>;
   logout: () => void;
 }
 
@@ -49,35 +46,30 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       login: async (email, password) => {
-        const postLogin = async (email: string, password: string) => {
-          const res = await api.post("/auth/login", { email, password });
+        const res = await api.post("/auth/login", { email, password });
 
-          return res.data;
-        };
-
-        const user = await postLogin(email, password);
-
-        setCookie("accessToken", user.data.accessToken);
-
-        await get().fetchProfile();
-
-        if (user.success) return true;
-
-        return false;
+        if (res.status >= 200 && res.status < 300) {
+          setCookie("accessToken", res.data.data.accessToken);
+          toast.success(res.data.message);
+          await get().fetchProfile();
+        } else {
+          toast.error(res.data.message);
+          set({ user: null, isAuthenticated: false });
+        }
       },
       signup: async (name, email, password) => {
-        const postSignup = async (name: string, email: string, password: string) => {
-          const res = await api.post("/auth/register", { name, email, password });
+        const res = await api.post("/auth/register", { name, email, password });
 
-          return res.data;
-        };
-
-        const resp = await postSignup(name, email, password);
-        return resp.data;
+        if (res.status >= 200 && res.status < 300) {
+          toast.success(res.data.message);
+        } else {
+          toast.error(res.data.message);
+          set({ user: null, isAuthenticated: false });
+        }
       },
       fetchProfile: async () => {
         const token = getCookie("accessToken");
-        if (!token) throw new Error("No access token found in cookie");
+        if (!token) return ;
 
         const res = await api.get("/auth/profile");
 

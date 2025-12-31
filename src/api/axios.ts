@@ -1,7 +1,6 @@
 // api/axios.ts
 
-import { useAuthStore } from "@/store/auth";
-import { getCookie, removeCookie, setCookie } from "@/utils/cookie";
+import { getCookie, setCookie } from "@/utils/cookie";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = import.meta.env.API_URL || "http://localhost:3000/";
@@ -41,53 +40,56 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-    };
+  (response) => {
+    console.log("✅ Response Success:", response.config.url);
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    console.log("❌ Response Error:", error.response?.status, originalRequest.url);
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url?.includes("/auth/refresh")
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
+        console.log("⏳ Queueing request:", originalRequest.url);
         return new Promise((resolve, reject) => {
-          failedQueue.push({
-            resolve: (token: string) => {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-              resolve(api(originalRequest));
-            },
-            reject,
-          });
-        });
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            console.log("🚀 Retrying queued request:", originalRequest.url);
+            originalRequest.headers["Authorization"] = "Bearer " + token;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
+      console.log("🔄 Attempting to refresh token...");
 
-      try {
-        const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+      return new Promise((resolve, reject) => {
+        api
+          .post("/auth/refresh", { refreshToken: getCookie("refreshToken") })
+          .then(({ data }) => {            
+            const newToken = data.data.access_token;
+            console.log("✨ New token received:", newToken);
+            setCookie("accessToken", newToken);
 
-        const newAccessToken = res.data.data.accessToken;
+            api.defaults.headers.common["Authorization"] = "Bearer " + newToken;
+            originalRequest.headers["Authorization"] = "Bearer " + newToken;
 
-        setCookie("accessToken", newAccessToken);
-
-        api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
-
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError as AxiosError, null);
-        removeCookie("accessToken");
-        useAuthStore.getState().logout();
-
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+            processQueue(null, newToken);
+            console.log("🔁 Retrying original request:", originalRequest.url);
+            resolve(api(originalRequest));
+          })
+          .catch((err) => {
+            console.error("💀 Refresh token failed:", err);
+            processQueue(err, null);
+            reject(err);
+          })
+          .finally(() => {
+            isRefreshing = false;
+          });
+      });
     }
 
     return Promise.reject(error);

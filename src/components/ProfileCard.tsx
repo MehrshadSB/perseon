@@ -2,17 +2,12 @@ import { useAuthStore } from "@/store/auth";
 import { SwitchMode } from "./SwitchTheme";
 export const ProfileCard = () => {
   const { user } = useAuthStore((s) => s);
-  console.log(user);
 
   return (
     <div className="flex items-center gap-3 p-3 mt-auto border-t border-gray-100 transition-colors cursor-pointer">
       {/* Avatar */}
-      {/* <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={name || "user Avater"} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-blue-600 font-bold text-sm">{name?.charAt(0)}</span>
-        )}
+      {/* <div className="w-6 h-6 rounded-full flex items-center bg-blue-100 justify-center overflow-hidden border border-blue-200">
+        <span className="text-blue-600 font-bold text-xs">{user?.data?.name?.charAt(0)}</span>
       </div> */}
 
       {/* Info */}

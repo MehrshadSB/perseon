@@ -6,7 +6,6 @@ import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
   const { login, signup } = useAuthStore((state) => state);
@@ -24,18 +23,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
       const { name, email, password } = value;
 
       if (!showNameField) {
-        const resp = await login(email, password);
+        await login(email, password);
 
-        if (resp) {
-          toast.success("ورود شما موفق بود .");
-          navigate({ to: "/" });
-        }
+        navigate({ to: "/" });
       } else {
-        const resp = await signup(name, email, password);
-
-        if (resp) {
-          toast.success(resp.message);
-        }
+        await signup(name, email, password);
+        form.reset();
+        setShowNameField(false);
       }
     },
   });
@@ -141,7 +135,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
           <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
             {([canSubmit, isSubmitting]) => (
               <button type="submit" disabled={!canSubmit || isSubmitting}>
-                {isSubmitting ? "درحال ورود..." : "ورود"}
+                {isSubmitting ? "درحال ورود..." : showNameField ? "ثبت نام" : "ورود"}
               </button>
             )}
           </form.Subscribe>
