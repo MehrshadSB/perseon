@@ -69,7 +69,7 @@ api.interceptors.response.use(
       return new Promise((resolve, reject) => {
         api
           .post("/auth/refresh", { refreshToken: getCookie("refreshToken") })
-          .then(({ data }) => {            
+          .then(({ data }) => {
             const newToken = data.data.access_token;
             console.log("✨ New token received:", newToken);
             setCookie("accessToken", newToken);
@@ -91,6 +91,10 @@ api.interceptors.response.use(
           });
       });
     }
+
+    // if (error.response?.status === 409) {
+    //   return Promise.resolve(error.response);
+    // }
 
     return Promise.reject(error);
   },

@@ -6,9 +6,9 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/(login)/login")({
   beforeLoad: () => {
     const { isAuthenticated } = useAuthStore.getState();
-    
+
     if (isAuthenticated) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: "/dashboard" });
     }
   },
   component: LoginPage,

@@ -27,7 +27,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ message: string }>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   fetchProfile: () => Promise<User | void>;
   logout: () => void;
@@ -50,11 +50,12 @@ export const useAuthStore = create<AuthState>()(
 
         if (res.status >= 200 && res.status < 300) {
           setCookie("accessToken", res.data.data.accessToken);
-          toast.success(res.data.message);
           await get().fetchProfile();
+          return { message: res.data.message };
         } else {
           toast.error(res.data.message);
           set({ user: null, isAuthenticated: false });
+          return { message: res.data.message };
         }
       },
       signup: async (name, email, password) => {
@@ -69,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
       },
       fetchProfile: async () => {
         const token = getCookie("accessToken");
-        if (!token) return ;
+        if (!token) return;
 
         const res = await api.get("/auth/profile");
 

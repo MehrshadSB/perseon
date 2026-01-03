@@ -9,12 +9,11 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type Modifier,
 } from "@dnd-kit/core";
 import { createSnapModifier } from "@dnd-kit/modifiers";
 import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from "date-fns-jalali";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { QuickEventModal } from "./QuickEventModal";
 import { Badge } from "./ui/badge";
 export const CalendarGrid = () => {
@@ -151,7 +150,6 @@ export const CalendarGrid = () => {
       const updatedEnd = new Date(
         newDate.setHours(draggedEvent.end.getHours(), draggedEvent.end.getMinutes()),
       );
-
     }
 
     // اگر در نمای هفته/روز هستیم (تغییر ساعت و احتمالاً روز)
@@ -163,7 +161,6 @@ export const CalendarGrid = () => {
       const duration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
       const updatedStart = new Date(newDate.setHours(newHour, 0, 0, 0));
       const updatedEnd = new Date(updatedStart.getTime() + duration);
-
     }
   };
 
@@ -190,47 +187,8 @@ export const CalendarGrid = () => {
     }),
   };
 
-  const createCalendarModifier = (
-    viewMode: string,
-    slotWidth: number,
-    slotHeight: number,
-  ): Modifier => {
-    return ({ transform }) => {
-      if (viewMode === "dayGridMonth") {
-        // در نمای ماه: اسنپ شدن کامل به خانه‌ها (هم افقی هم عمودی)
-        return {
-          ...transform,
-          x: Math.round(transform.x / slotWidth) * slotWidth,
-          y: Math.round(transform.y / slotHeight) * slotHeight,
-        };
-      } else {
-        // در نمای هفته: اسنپ عمودی ۱۵ دقیقه‌ای و اسنپ افقی کامل روی ستون روزها
-        return {
-          ...transform,
-          x: Math.round(transform.x / slotWidth) * slotWidth,
-          y: Math.round(transform.y / (slotHeight / 4)) * (slotHeight / 4), // اسنپ ۱۵ دقیقه‌ای
-        };
-      }
-    };
-  };
-
-  const calendarRef = useRef<HTMLDivElement>(null);
-
-  // محاسبه ابعاد برای اسنپ کردن
-  const slotHeight = 48; // ارتفاع هر ساعت که در کدتان h-12 بود
-  const [slotWidth, setSlotWidth] = useState(0);
-
-  useEffect(() => {
-    if (calendarRef.current) {
-      const width = calendarRef.current.offsetWidth / (viewMode === "timeGridDay" ? 1 : 7);
-      setSlotWidth(width);
-    }
-  }, [viewMode, viewDate]);
-
-  const calendarModifier = createCalendarModifier(viewMode, slotWidth, slotHeight);
-
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[calendarModifier]}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col w-full h-screen pt-14 overflow-hidden">
         <div className="flex w-full border-b ">
           {viewMode === "timeGridWeek" ? <div className="w-16 border-l" /> : null}
@@ -282,7 +240,7 @@ export const CalendarGrid = () => {
               exit="exit"
               className="w-full h-full"
             >
-              <div ref={calendarRef} className="flex-1 h-full overflow-y-auto scrollbar-hide">
+              <div className="flex-1 h-full overflow-y-auto scrollbar-hide">
                 {viewMode === "dayGridMonth" ? (
                   <div className="flex-1 grid grid-cols-7 grid-rows-5 h-full">
                     {days.map((day, index) => (

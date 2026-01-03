@@ -13,6 +13,7 @@ import { Route as BoilerplateRouteImport } from './routes/boilerplate'
 import { Route as UsersRouteImport } from './routes/Users'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as loginLoginRouteImport } from './routes/(login)/login'
+import { Route as dashboardDashboardRouteImport } from './routes/(dashboard)/dashboard'
 
 const BoilerplateRoute = BoilerplateRouteImport.update({
   id: '/boilerplate',
@@ -34,17 +35,24 @@ const loginLoginRoute = loginLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const dashboardDashboardRoute = dashboardDashboardRouteImport.update({
+  id: '/(dashboard)/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
   '/boilerplate': typeof BoilerplateRoute
+  '/dashboard': typeof dashboardDashboardRoute
   '/login': typeof loginLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
   '/boilerplate': typeof BoilerplateRoute
+  '/dashboard': typeof dashboardDashboardRoute
   '/login': typeof loginLoginRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/Users': typeof UsersRoute
   '/boilerplate': typeof BoilerplateRoute
+  '/(dashboard)/dashboard': typeof dashboardDashboardRoute
   '/(login)/login': typeof loginLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/Users' | '/boilerplate' | '/login'
+  fullPaths: '/' | '/Users' | '/boilerplate' | '/dashboard' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/Users' | '/boilerplate' | '/login'
-  id: '__root__' | '/' | '/Users' | '/boilerplate' | '/(login)/login'
+  to: '/' | '/Users' | '/boilerplate' | '/dashboard' | '/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/Users'
+    | '/boilerplate'
+    | '/(dashboard)/dashboard'
+    | '/(login)/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UsersRoute: typeof UsersRoute
   BoilerplateRoute: typeof BoilerplateRoute
+  dashboardDashboardRoute: typeof dashboardDashboardRoute
   loginLoginRoute: typeof loginLoginRoute
 }
 
@@ -99,6 +115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof loginLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(dashboard)/dashboard': {
+      id: '/(dashboard)/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof dashboardDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,6 +129,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsersRoute: UsersRoute,
   BoilerplateRoute: BoilerplateRoute,
+  dashboardDashboardRoute: dashboardDashboardRoute,
   loginLoginRoute: loginLoginRoute,
 }
 export const routeTree = rootRouteImport

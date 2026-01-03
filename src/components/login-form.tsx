@@ -12,7 +12,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
   const navigate = useNavigate();
 
   const [showNameField, setShowNameField] = useState(false);
-
+  const [loginError, setLoginError] = useState<string | null>(null);
   const form = useForm({
     defaultValues: {
       name: "",
@@ -23,8 +23,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
       const { name, email, password } = value;
 
       if (!showNameField) {
-        await login(email, password);
-
+        try {
+          const resp = await login(email, password);
+          console.log(resp);
+        } catch (error: any) {
+          if (error.response) {
+            setLoginError(error.response.data.message);
+          }
+        }
         navigate({ to: "/" });
       } else {
         await signup(name, email, password);
@@ -33,9 +39,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
       }
     },
   });
+  console.log(loginError);
+
   return (
     <form
-      className={cn("flex flex-col form", className)}
+      className={cn("flex flex-col border card px-12 py-16 rounded-md form", className)}
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -69,7 +77,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                   {(field) => (
                     <Input
                       field={field}
-                      type="text"
+                      type="name"
                       label={
                         <FieldLabel htmlFor="name" className="mb-2">
                           نام
@@ -130,12 +138,29 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
               />
             )}
           </form.Field>
+          {loginError ? (
+            <span className="text-xs font-medium text-red-500 dark:text-red-400 drop-shadow-[0_0_5px_rgba(220,38,38,0.4)]">
+              {loginError}
+            </span>
+          ) : null}
         </Field>
         <Field>
           <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
             {([canSubmit, isSubmitting]) => (
-              <button type="submit" disabled={!canSubmit || isSubmitting}>
-                {isSubmitting ? "درحال ورود..." : showNameField ? "ثبت نام" : "ورود"}
+              <button
+                type="submit"
+                disabled={!canSubmit || isSubmitting}
+                className="bg-emerald-800! py-2! rounded-sm! flex! items-center! justify-center!"
+              >
+                <span className="text-base font-medium">
+                  {isSubmitting
+                    ? "درحال ورود..."
+                    : isSubmitting && showNameField
+                      ? "در حال ثبت نام..."
+                      : showNameField
+                        ? "ثبت نام"
+                        : "ورود"}
+                </span>
               </button>
             )}
           </form.Subscribe>
