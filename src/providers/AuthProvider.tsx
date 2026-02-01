@@ -5,7 +5,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const { fetchProfile, isAuthenticated } = useAuthStore((s) => s);
 
   useEffect(() => {
-    if (isAuthenticated) return;
     
     const getProfile = async () => {
       await fetchProfile();

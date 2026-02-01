@@ -1,5 +1,13 @@
+import {
+  createEvent,
+  fetchEvents,
+  updateEvent,
+  type CreateEventDto,
+  type CreateRecurrenceDto,
+  type Event,
+} from "@/api/events.api";
+import type { Page } from "@/api/pages.api";
 import { generateMonthGrid } from "@/lib/generateMonthGrid";
-import { generateDummyEvents } from "@/lib/utils";
 import useCalendarStore from "@/store/calender";
 import {
   DndContext,
@@ -10,13 +18,19 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { createSnapModifier } from "@dnd-kit/modifiers";
+import { Badge } from "@heroui/badge";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { eachDayOfInterval, endOfWeek, format, isSameDay, startOfWeek } from "date-fns-jalali";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { QuickEventModal } from "./QuickEventModal";
-import { Badge } from "./ui/badge";
-export const CalendarGrid = () => {
+interface CalendarGridProps {
+  pageId: string;
+  page: Page;
+}
+
+export const CalendarGrid = ({ pageId, page }: CalendarGridProps) => {
+  const queryClient = useQueryClient();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ date: Date; y: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<number | null>(null);
@@ -122,7 +136,6 @@ export const CalendarGrid = () => {
     }
   }, [selectedRange, showModal]);
 
-  const [events, setEvents] = useState(generateDummyEvents());
   const viewMode = useCalendarStore((state) => state.viewMode);
   const viewDate = useCalendarStore((state) => state.viewDate);
   const direction = useCalendarStore((state) => state.direction);
@@ -138,18 +151,25 @@ export const CalendarGrid = () => {
     const { over, active } = event;
     if (!over) return;
 
-    const draggedEvent = active.data.current?.event;
+    const draggedEvent = active.data.current?.event as Event;
     const overId = over.id.toString();
 
     // اگر در نمای ماه هستیم (فقط تغییر روز)
     if (viewMode === "dayGridMonth") {
       const newDate = new Date(overId); // overId در اینجا "yyyy-MM-dd" است
-      const updatedStart = new Date(
-        newDate.setHours(draggedEvent.start.getHours(), draggedEvent.start.getMinutes()),
-      );
-      const updatedEnd = new Date(
-        newDate.setHours(draggedEvent.end.getHours(), draggedEvent.end.getMinutes()),
-      );
+      const oldStart = new Date(draggedEvent.startTimeUtc);
+      const oldEnd = new Date(draggedEvent.endTimeUtc);
+
+      const updatedStart = new Date(newDate.setHours(oldStart.getHours(), oldStart.getMinutes()));
+      const updatedEnd = new Date(newDate.setHours(oldEnd.getHours(), oldEnd.getMinutes()));
+
+      updateEventMutation.mutate({
+        id: draggedEvent.id,
+        data: {
+          startTimeUtc: updatedStart.toISOString(),
+          endTimeUtc: updatedEnd.toISOString(),
+        },
+      });
     }
 
     // اگر در نمای هفته/روز هستیم (تغییر ساعت و احتمالاً روز)
@@ -158,9 +178,20 @@ export const CalendarGrid = () => {
       const newDate = new Date(datePart);
       const newHour = parseInt(hourPart);
 
-      const duration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
+      const oldStart = new Date(draggedEvent.startTimeUtc);
+      const oldEnd = new Date(draggedEvent.endTimeUtc);
+      const duration = oldEnd.getTime() - oldStart.getTime();
+
       const updatedStart = new Date(newDate.setHours(newHour, 0, 0, 0));
       const updatedEnd = new Date(updatedStart.getTime() + duration);
+
+      updateEventMutation.mutate({
+        id: draggedEvent.id,
+        data: {
+          startTimeUtc: updatedStart.toISOString(),
+          endTimeUtc: updatedEnd.toISOString(),
+        },
+      });
     }
   };
 
@@ -169,8 +200,6 @@ export const CalendarGrid = () => {
       activationConstraint: { distance: 5 },
     }),
   );
-
-  const snapTo15Min = createSnapModifier(12);
 
   const variants = {
     initial: (direction: number) => ({
@@ -186,6 +215,47 @@ export const CalendarGrid = () => {
       opacity: 0,
     }),
   };
+
+  // Fetch events from API
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["events", pageId, viewDate],
+    queryFn: () => {
+      const start = new Date(viewDate);
+      start.setDate(1);
+      const end = new Date(viewDate);
+      end.setMonth(end.getMonth() + 1, 0);
+      return fetchEvents(pageId, start.toISOString(), end.toISOString());
+    },
+  });
+
+  const handleSaveEvent = async (
+    eventData: CreateEventDto,
+    recurrenceData?: CreateRecurrenceDto,
+  ) => {
+    try {
+      await createEvent(eventData, recurrenceData);
+      // Invalidate queries to refresh the calendar
+      queryClient.invalidateQueries({ queryKey: ["events", pageId] });
+    } catch (error) {
+      console.error("Failed to create event:", error);
+    }
+  };
+
+  // Create event mutation
+  const createEventMutation = useMutation({
+    mutationFn: (event: any) => createEvent(event),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events", pageId] });
+    },
+  });
+
+  // Update event mutation
+  const updateEventMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateEvent(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events", pageId] });
+    },
+  });
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -246,7 +316,7 @@ export const CalendarGrid = () => {
                     {days.map((day, index) => (
                       <DayCell key={index} day={day}>
                         {events
-                          .filter((ev) => isSameDay(ev.start, day.date))
+                          .filter((ev) => isSameDay(new Date(ev.startTimeUtc), day.date))
                           .map((ev) => (
                             <DraggableEvent key={ev.id} event={ev} />
                           ))}
@@ -312,7 +382,7 @@ export const CalendarGrid = () => {
                             {/* Events should map here */}
                             <div className="absolute inset-0 pointer-events-none">
                               {events
-                                .filter((event) => isSameDay(new Date(event.start), dayDate))
+                                .filter((event) => isSameDay(new Date(event.startTimeUtc), dayDate))
                                 .map((event) => (
                                   <div
                                     key={event.id}
@@ -332,6 +402,7 @@ export const CalendarGrid = () => {
           </AnimatePresence>
         </div>
         <QuickEventModal
+          pageId={pageId}
           showModal={showModal}
           setShowModal={(val) => {
             setShowModal(val);
@@ -343,13 +414,7 @@ export const CalendarGrid = () => {
           modalPos={modalPos}
           selectedRange={selectedRange}
           setSelectedRange={setSelectedRange}
-          onSave={(data) => {
-            console.log("Saving to DB:", data);
-            // اینجا اکشن ذخیره در دیتابیس را صدا بزن
-            setShowModal(false);
-            setDragStart(null);
-            setDragEnd(null);
-          }}
+          onSave={handleSaveEvent}
         />
       </div>
     </DndContext>
@@ -357,7 +422,7 @@ export const CalendarGrid = () => {
 };
 
 // --- کامپوننت Draggable (رویداد) ---
-const DraggableEvent = ({ event }: { event: any }) => {
+const DraggableEvent = ({ event }: { event: Event }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `ev-${event.id}`, // یک آیدی یونیک
     data: { event },
@@ -404,7 +469,6 @@ const DayCell = ({ day, children }: { day: any; children: React.ReactNode }) => 
         </div>
 
         <Badge
-          variant="secondary"
           className={`h-6 w-6 flex items-center justify-center p-0 ${
             isSameDay(day.date, new Date()) ? "bg-blue-600 text-white" : ""
           }`}
@@ -417,14 +481,14 @@ const DayCell = ({ day, children }: { day: any; children: React.ReactNode }) => 
   );
 };
 
-const TimeGridEvent = ({ event }: { event: any }) => {
+const TimeGridEvent = ({ event }: { event: Event }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `ev-${event.id}`,
     data: { event },
   });
 
-  const start = new Date(event.start);
-  const end = new Date(event.end);
+  const start = new Date(event.startTimeUtc);
+  const end = new Date(event.endTimeUtc);
   const top = start.getHours() * 36 + (start.getMinutes() / 60) * 36;
   const height = ((end.getTime() - start.getTime()) / (1000 * 60 * 60)) * 36;
 

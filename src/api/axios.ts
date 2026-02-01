@@ -1,5 +1,6 @@
 // api/axios.ts
 
+import { useAuthStore } from "@/store/auth";
 import { getCookie, setCookie } from "@/utils/cookie";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
@@ -31,7 +32,6 @@ export const api = axios.create({
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const accessToken = getCookie("accessToken");
-
   if (accessToken && config.headers) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
@@ -83,6 +83,7 @@ api.interceptors.response.use(
           })
           .catch((err) => {
             console.error("💀 Refresh token failed:", err);
+            useAuthStore.getState().cleanUp();
             processQueue(err, null);
             reject(err);
           })

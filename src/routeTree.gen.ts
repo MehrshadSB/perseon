@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as BoilerplateRouteImport } from './routes/boilerplate'
 import { Route as UsersRouteImport } from './routes/Users'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CPageIdRouteImport } from './routes/c/$pageId'
 import { Route as loginLoginRouteImport } from './routes/(login)/login'
 import { Route as dashboardDashboardRouteImport } from './routes/(dashboard)/dashboard'
 
@@ -28,6 +29,11 @@ const UsersRoute = UsersRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CPageIdRoute = CPageIdRouteImport.update({
+  id: '/c/$pageId',
+  path: '/c/$pageId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const loginLoginRoute = loginLoginRouteImport.update({
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/boilerplate': typeof BoilerplateRoute
   '/dashboard': typeof dashboardDashboardRoute
   '/login': typeof loginLoginRoute
+  '/c/$pageId': typeof CPageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/boilerplate': typeof BoilerplateRoute
   '/dashboard': typeof dashboardDashboardRoute
   '/login': typeof loginLoginRoute
+  '/c/$pageId': typeof CPageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,19 @@ export interface FileRoutesById {
   '/boilerplate': typeof BoilerplateRoute
   '/(dashboard)/dashboard': typeof dashboardDashboardRoute
   '/(login)/login': typeof loginLoginRoute
+  '/c/$pageId': typeof CPageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/Users' | '/boilerplate' | '/dashboard' | '/login'
+  fullPaths:
+    | '/'
+    | '/Users'
+    | '/boilerplate'
+    | '/dashboard'
+    | '/login'
+    | '/c/$pageId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/Users' | '/boilerplate' | '/dashboard' | '/login'
+  to: '/' | '/Users' | '/boilerplate' | '/dashboard' | '/login' | '/c/$pageId'
   id:
     | '__root__'
     | '/'
@@ -75,6 +90,7 @@ export interface FileRouteTypes {
     | '/boilerplate'
     | '/(dashboard)/dashboard'
     | '/(login)/login'
+    | '/c/$pageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +99,7 @@ export interface RootRouteChildren {
   BoilerplateRoute: typeof BoilerplateRoute
   dashboardDashboardRoute: typeof dashboardDashboardRoute
   loginLoginRoute: typeof loginLoginRoute
+  CPageIdRoute: typeof CPageIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -108,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$pageId': {
+      id: '/c/$pageId'
+      path: '/c/$pageId'
+      fullPath: '/c/$pageId'
+      preLoaderRoute: typeof CPageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(login)/login': {
       id: '/(login)/login'
       path: '/login'
@@ -131,6 +155,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoilerplateRoute: BoilerplateRoute,
   dashboardDashboardRoute: dashboardDashboardRoute,
   loginLoginRoute: loginLoginRoute,
+  CPageIdRoute: CPageIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

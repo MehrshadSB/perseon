@@ -7,8 +7,8 @@ import * as React from "react";
 import { getDefaultClassNames, type DayButton } from "react-day-picker";
 import { DayPicker } from "react-day-picker/persian";
 
-import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Button } from "@heroui/button";
 
 export function CalendarHijri() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
@@ -36,13 +36,10 @@ function Calendar({
   classNames,
   showOutsideDays = true,
   captionLayout = "label",
-  buttonVariant = "ghost",
   formatters,
   components,
   ...props
-}: React.ComponentProps<typeof DayPicker> & {
-  buttonVariant?: React.ComponentProps<typeof Button>["variant"];
-}) {
+}: React.ComponentProps<typeof DayPicker>) {
   const defaultClassNames = getDefaultClassNames();
 
   return (
@@ -68,13 +65,11 @@ function Calendar({
           defaultClassNames.nav,
         ),
         button_previous: cn(
-          buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none bg-transparent hover:bg-default-100 text-default-foreground",
           defaultClassNames.button_previous,
         ),
         button_next: cn(
-          buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
+          "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none bg-transparent hover:bg-default-100 text-default-foreground",
           defaultClassNames.button_next,
         ),
         month_caption: cn(
@@ -173,11 +168,11 @@ function CalendarDayButton({
     if (modifiers.focused) ref.current?.focus();
   }, [modifiers.focused]);
 
+  const { formAction, onFocus, onBlur, ...buttonProps } = props;
+
   return (
-    <Button
+    <button
       ref={ref}
-      variant="ghost"
-      size="icon"
       data-day={day.date.toLocaleDateString()}
       data-selected-single={
         modifiers.selected &&
@@ -193,7 +188,7 @@ function CalendarDayButton({
         defaultClassNames.day,
         className,
       )}
-      {...props}
+      {...buttonProps}
     />
   );
 }

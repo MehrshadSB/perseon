@@ -1,5 +1,5 @@
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { InputField } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
 import { useForm } from "@tanstack/react-form";
@@ -75,7 +75,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                   }}
                 >
                   {(field) => (
-                    <Input
+                    <InputField
                       field={field}
                       type="name"
                       label={
@@ -103,7 +103,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
             }}
           >
             {(field) => (
-              <Input
+              <InputField
                 field={field}
                 type="email"
                 label={
@@ -124,7 +124,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
             }}
           >
             {(field) => (
-              <Input
+              <InputField
                 field={field}
                 type="password"
                 label={

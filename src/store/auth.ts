@@ -31,6 +31,7 @@ interface AuthState {
   signup: (name: string, email: string, password: string) => Promise<void>;
   fetchProfile: () => Promise<User | void>;
   logout: () => void;
+  cleanUp: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -81,6 +82,12 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         set({ user: null, isAuthenticated: false });
+      },
+      cleanUp: () => {
+        document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        set({ user: null, isAuthenticated: false });
+        window.location.href = "/login";
       },
     }),
     {

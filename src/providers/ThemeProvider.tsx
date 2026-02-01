@@ -1,3 +1,4 @@
+import { HeroUIProvider } from "@heroui/react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 type Theme = "light" | "dark" | "system";
@@ -61,7 +62,11 @@ export function ThemeProvider({
 
   const value = useMemo(() => ({ theme, resolvedTheme, setTheme }), [theme, resolvedTheme]);
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>
+      <HeroUIProvider>{children}</HeroUIProvider>
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
